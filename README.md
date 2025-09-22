@@ -1,108 +1,191 @@
-# TTGO-NightscoutMonitor
+# TTGO Nightscout Monitor
 
-A simple proof of concept (POC) to monitor glucose levels in real-time using the TTGO T-Display ESP32 and the Nightscout platform.
+A simple, at-a-glance monitor for Nightscout glucose readings running on the LilyGO TTGO T-Display (ESP32, 1.14" LCD). It shows the latest glucose value, a trend arrow, and time since the last reading. Put it in a central place at home for quick checks without reaching for your phone.
 
----
-
-## Introduction
-
-First off, I’m not a programmer—I'm a father of a child with Type 1 Diabetes. I’m sharing this project for other parents who might be searching for a similar solution.
-
-I built this small proof of concept (POC) to make it easier to check my son's glucose levels without constantly needing to look at my phone. The idea was simple: I wanted a device in a central spot in our home that always displays the glucose levels, so I could quickly glance at it when passing by.
-
-This project uses the **TTGO T-Display ESP32** board to connect to Wi-Fi and fetch glucose level data from the **Nightscout** platform via API calls. Since this was my first experience with the ESP32, I’ll walk you through the setup process as I did it—not necessarily the most optimized way, but it worked for me!
+> Important: This is a hobby project, not a medical device. Do not rely on it for treatment decisions.
 
 ---
 
-## Hardware Requirements
+## Why
 
-- **TTGO T-Display ESP32** board (available on Aliexpress and other platforms)
-- **USB-C or USB-A to USB-C** cable (ensure it's a data cable)
-
-## Software Requirements
-
-- [Arduino IDE](https://www.arduino.cc/en/software) (to program and upload code to the board)
-- Required drivers for TTGO T-Display
+I’m not a programmer—just a parent of a child with Type 1 Diabetes. I wanted a small display in the hallway that shows my son’s glucose levels at a glance. This project pulls data from Nightscout and renders it clearly on the TTGO T-Display.
 
 ---
 
-## Setup Instructions
+## Features
 
-### Step 1: Install Required Drivers
-
-Before connecting your TTGO board to the computer, install the necessary drivers. Refer to the [official TTGO repository](https://github.com/Xinyuan-LilyGO/TTGO-T-Display) for driver downloads. Currently, these drivers are required:
-
-- **CHxxx Series** (for both macOS and Windows)
-- **CP21xx Series** drivers
-
-**Note:** I also installed the `CH340 Drivers` from [here](https://www.wch.cn/downloads/CH341SER_ZIP.html), which might have resolved some board recognition issues for me. This may not be necessary for everyone, but I’m mentioning it just in case.
-
-### Step 2: Install Arduino IDE
-
-1. Download and install the [Arduino IDE](https://www.arduino.cc/en/software).
-2. Open the Arduino IDE and install the **ESP32 core**.
-
-   To install the ESP32 core:
-   - Go to **File > Preferences**.
-   - In the **Additional Boards Manager URLs** field, add this URL:
-     ```
-     https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-     ```
-
-3. Now, open **Boards Manager** by going to **Tools > Board > Boards Manager** and search for "ESP32".
-4. Install the **ESP32** platform.
-
-**Important Note:** There's a known compile error in the recent versions of the ESP32 core that can cause issues when using the display on the TTGO T-Display board. I recommend using version **2.0.17**, which worked for me. You can read more about this issue [here](https://github.com/Bodmer/TFT_eSPI/issues/3346).
-
-### Step 3: Install the TFT_eSPI Library
-
-1. To make the TTGO T-Display work with its screen, install the **TFT_eSPI** library:
-   - Go to **Sketch > Include Library > Manage Libraries**.
-   - Search for **TFT_eSPI** and click **Install**.
-
-### Step 4: Configure the TFT_eSPI Library
-
-After installing the library, we need to modify the **TFT_eSPI** library setup to work with the TTGO T-Display. Follow these steps:
-
-1. Navigate to the file:  
-   `/Documents/Arduino/libraries/TFT_eSPI/User_Setup_Select.h`.
-   
-2. Modify the file by:
-   - Commenting out this line (add `//` at the start of the line):
-     ```cpp
-     // #include <User_Setup.h>  // Default setup is root library folder
-     ```
-   - Un-commenting this line:
-     ```cpp
-     #include <User_Setups/Setup25_TTGO_T_Display.h>  // Setup file for ESP32 and TTGO T-Display ST7789V SPI bus TFT
-     ```
-
-3. Save and close the file.
-
-### Step 5: Select Board and Port in Arduino IDE
-
-1. In Arduino IDE, go to **Tools > Board** and select **ESP32 Dev Module**.
-2. Connect your TTGO T-Display board to your computer using a USB cable.
-3. Go to **Tools > Port** and select the correct COM port (e.g., COM 4 on Windows).
-
-**Troubleshooting Tip**: If your board isn’t recognized, try switching to a different USB-C cable (preferably USB-C to USB-C). I had issues with the USB-A to USB-C cable, but switching to a USB-C to USB-C cable solved the problem for me.
+- Large on-screen glucose value with ASCII trend arrows:
+  - `^^` DoubleUp, `^` SingleUp, `/` FortyFiveUp, `->` Flat, `\` FortyFiveDown, `v` SingleDown, `vv` DoubleDown
+- Time since last reading (in minutes)
+- Local time display (configurable timezone, defaults to Europe/Warsaw)
+- One-button brightness control (5 levels)
+- Refresh every 60 seconds
 
 ---
 
-## Conclusion
+## Hardware
 
-Once everything is set up, you’re ready to upload the code and start pulling glucose data from Nightscout. This simple display should help you monitor glucose levels at a glance, like it did for me.
+- LilyGO TTGO T-Display ESP32 (ST7789 240×135 LCD, commonly called “1.14 inch”)
+- USB-C cable (make sure it’s a data-capable cable)
 
-Feel free to fork this repository, modify the code, or share it with others. I hope it helps other parents who are looking for a similar solution!
+Pins used by this sketch:
+- Backlight (BL): GPIO 4 (PWM)
+- Button: GPIO 35 (cycles brightness)
+
+Power: USB-C is sufficient. Battery support is not covered in this repo.
+
+---
+
+## Getting Started
+
+### 1) Arduino IDE + ESP32 core
+
+- Install Arduino IDE:
+  - https://www.arduino.cc/en/software
+
+- Install the ESP32 core:
+  - Arduino IDE → File → Preferences → “Additional Boards Manager URLs” add:
+    ```
+    https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+    ```
+  - Tools → Board → Boards Manager → Search “ESP32” → Install
+
+- Recommended ESP32 core version: 2.0.17
+  - There is a known compile/display issue with some versions; 2.0.17 is confirmed working.
+  - Related discussion: https://github.com/Bodmer/TFT_eSPI/issues/3346
+
+### 2) Required libraries
+
+Install these from Sketch → Include Library → Manage Libraries:
+
+- TFT_eSPI by Bodmer
+- ArduinoJson by Benoit Blanchon
+- ezTime by Rop Gonggrijp
+
+### 3) Configure TFT_eSPI for TTGO T-Display
+
+- Find `User_Setup_Select.h` inside your Arduino libraries folder. Example:
+  - macOS: `~/Documents/Arduino/libraries/TFT_eSPI/User_Setup_Select.h`
+  - Windows: `Documents\Arduino\libraries\TFT_eSPI\User_Setup_Select.h`
+
+- Edit:
+  - Comment out:
+    ```cpp
+    // #include <User_Setup.h>
+    ```
+  - Un-comment:
+    ```cpp
+    #include <User_Setups/Setup25_TTGO_T_Display.h>
+    ```
+
+Save the file.
+
+### 4) Nightscout URL + token
+
+You need your Nightscout endpoint plus a token with at least read access. Example:
+```
+https://YOUR-SITE.herokuapp.com/api/v1/entries.json?token=YOUR-TOKEN
+```
+
+This repo uses a `secrets.h` file (not committed) to keep credentials private.
+
+- Copy `include/secrets.example.h` to `include/secrets.h`
+- Fill in:
+  - `WIFI_SSID`, `WIFI_PASS`
+  - `NIGHTSCOUT_URL` (full URL including token)
+
+### 5) Board and Port
+
+- Tools → Board → “ESP32 Dev Module” (or a specific TTGO T-Display board if available in your core)
+- Tools → Port → Select the correct COM/tty
+- Recommended settings:
+  - Upload Speed: 921600 (or 115200 if unstable)
+  - Flash Frequency: 80 MHz
+  - Flash Size: 4MB
+  - Partition Scheme: Default or “Huge APP” (either works for this sketch)
+
+### 6) Upload
+
+- Open `src/main.ino`
+- Click “Upload” in Arduino IDE
+- The display should initialize and update every 60 seconds
+
+---
+
+## What You’ll See
+
+- Large glucose value on the left, trend arrow on the right
+- Bottom line: local time and “X min” since the last reading (capped at “20+min”)
+- Press the Button (GPIO 35) to cycle brightness (5 levels)
+
+---
+
+## Configuration
+
+- Timezone: Change `myTZ.setLocation("Europe/Warsaw")` to your TZ
+  - Valid TZ names: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+
+- Refresh interval: Adjust `delay(60000);` in `loop()` (milliseconds)
+
+- ASCII trend arrows:
+  - Mapped from Dexcom direction strings: `DoubleUp`, `SingleUp`, `FortyFiveUp`, `Flat`, `FortyFiveDown`, `SingleDown`, `DoubleDown`, `NotComputable`, `RateOutOfRange`
+
+---
+
+## Troubleshooting
+
+- Board not detected:
+  - Try a different USB-C cable (ensure it supports data)
+  - Install CP210x / CH34x drivers (Windows/macOS)
+- Display stays blank:
+  - Confirm TFT_eSPI setup uses `Setup25_TTGO_T_Display.h`
+  - Use ESP32 core 2.0.17
+- No time / timezone wrong:
+  - `ezTime` syncs via NTP after Wi‑Fi connects; ensure internet access
+  - Set the correct timezone identifier
+- Nightscout fetch fails:
+  - Test your URL in a browser first
+  - Ensure token permissions are correct
+  - Verify your instance supports `/api/v1/entries.json`
+- JSON parse issues:
+  - Nightscout responses can vary; ensure the first element contains `sgv`, `direction`, and `mills`
+
+---
+
+## Security
+
+- Do not commit `include/secrets.h`
+- Use the provided `.gitignore`
+- Treat Nightscout tokens like passwords
+
+---
+
+## Roadmap / Ideas
+
+- Wi‑Fi Manager (captive portal) to configure networks without recompiling
+- Dexcom Share login (where permitted; mind the terms of service)
+- OTA updates
+- Low battery indicator (if battery/charger board is used)
+- Enhanced UI themes (colors, fonts, icons)
 
 ---
 
 ## Credits
 
-- [TTGO T-Display Repository](https://github.com/Xinyuan-LilyGO/TTGO-T-Display)
-- [Nightscout Platform](https://nightscout.github.io/)
+- LilyGO TTGO T-Display: https://github.com/Xinyuan-LilyGO/TTGO-T-Display
+- Nightscout: https://nightscout.github.io/
+- TFT_eSPI: https://github.com/Bodmer/TFT_eSPI
+- ezTime: https://github.com/ropg/ezTime
+- ArduinoJson: https://arduinojson.org/
 
 ---
 
-### Keywords:
-**ESP32**, **TTGO T-Display**, **Nightscout**, **Glucose Monitor**, **Type 1 Diabetes**, **D1T**, **Real-time Glucose Monitoring**
+## Disclaimer
+
+This project is provided “as is” with no warranties. It is not a medical device and should not be used as the basis for therapy decisions. Always follow your healthcare provider’s guidance.
+
+---
+
+## License
+
+MIT — see LICENSE for details.
